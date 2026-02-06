@@ -1,0 +1,648 @@
+{
+  "name": "Restaurant Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "course",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        992,
+        208
+      ],
+      "id": "374d11c0-0742-4275-9eb2-22ea46415417",
+      "name": "Webhook",
+      "webhookId": "[WEBHOOK_ID_REDACTED]"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Address:{{ $json.body.message.toolCalls[0].function.arguments.Address }}\ncontact number:{{ $json.body.message.toolCalls[0].function.arguments['Contact Number'] }}\nwhat to order:{{ $json.body.message.toolCalls[0].function.arguments['What to order'] }}\ncustomer name: {{ $json.body.message.toolCallList[0].function.arguments['Customer name'] }}",
+        "options": {
+          "systemMessage": "You are an AI assistant for a restaurant order system.\n\nYou have access to a PDF menu through RAG, so if the user asks for information about the menu — like item names, prices, or details — use that PDF to answer accurately.\n\nThe user has already completed a call with the voice assistant and provided their name, phone number, and the items they want to order.\n\nYour job is to:\n- Understand the user's order\n- Validate that the items exist in the menu\n- Summarize the order in a short message\n- Be polite and concise\n- Do not ask the user more questions\n\nAt the end, create a summary message\n\nDo not explain how the system works or mention AI.\nOnly focus on returning a natural, useful confirmation.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1248,
+        208
+      ],
+      "id": "9a88de39-7a5b-4ebe-9bb2-d6cbe24fa82d",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1216,
+        432
+      ],
+      "id": "0d4da8e5-c840-403c-a03e-b35514ce32a1",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[CREDENTIAL_ID_REDACTED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "[FILE_ID_REDACTED]",
+          "mode": "list",
+          "cachedResultName": "menu_pdf.pdf",
+          "cachedResultUrl": "[URL_REDACTED]"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        224,
+        208
+      ],
+      "id": "102b9e73-b258-40bc-8445-4a23ad0c9553",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[CREDENTIAL_ID_REDACTED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "order-taker",
+          "mode": "list",
+          "cachedResultName": "order-taker"
+        },
+        "options": {
+          "pineconeNamespace": "order-taker"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        480,
+        0
+      ],
+      "id": "6a7373dc-bb2e-49f7-9253-7b5947b2dd66",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "[CREDENTIAL_ID_REDACTED]",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        448,
+        224
+      ],
+      "id": "5c83a816-9833-439e-8c0f-39cb3b3ce3d4",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "[CREDENTIAL_ID_REDACTED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        576,
+        224
+      ],
+      "id": "a71f730b-fc9a-412a-8012-5a367d34d5e5",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        656,
+        432
+      ],
+      "id": "493377f0-0559-4620-a079-81a4a0d86709",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        208
+      ],
+      "id": "d729e814-38d3-489f-9a55-2a4d179a55c4",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Retrieves the most relevant document chunks from Pinecone based on user queries. Ideal for Retrieval-Augmented Generation (RAG) workflows, where AI must respond using real uploaded data such as restaurant menus, FAQs, or documents. This ensures accurate and grounded responses based on your own knowledge base.",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "order-taker",
+          "mode": "list",
+          "cachedResultName": "order-taker"
+        },
+        "options": {
+          "pineconeNamespace": "order-taker"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        1344,
+        432
+      ],
+      "id": "23bd1c00-e98e-4f54-972c-98c7a233881d",
+      "name": "Pinecone Vector Store1",
+      "credentials": {
+        "pineconeApi": {
+          "id": "[CREDENTIAL_ID_REDACTED]",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1424,
+        640
+      ],
+      "id": "b970314f-3716-4224-9a4a-9246fa06d62a",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "[CREDENTIAL_ID_REDACTED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"results\": [\n    {\n      \"toolCallId\": \"{{ $('Webhook').item.json.body.message.toolCalls[0].id || '' }}\",\n      \"result\": \"{{ $json.output.replace(/\"/g, '\\\\\"').replace(/\\n/g, ' ') || '' }}\"\n    }\n  ]\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1776,
+        -96
+      ],
+      "id": "6b472895-24a2-49c7-85ba-89125d22d20b",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "sendTo": "[EMAIL_REDACTED]",
+        "subject": "customer placed an order",
+        "message": "=<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n  <title>Order Summary</title>\n  <style>\n    body {\n      font-family: Arial, sans-serif;\n      background-color: #f7f8fa;\n      margin: 0;\n      padding: 0;\n    }\n    .container {\n      max-width: 500px;\n      margin: 30px auto;\n      background: #ffffff;\n      border-radius: 12px;\n      box-shadow: 0 4px 12px rgba(0,0,0,0.08);\n      overflow: hidden;\n    }\n    .header {\n      background-color: #ff6b35;\n      color: white;\n      text-align: center;\n      padding: 16px 10px;\n      font-size: 1.25rem;\n      font-weight: bold;\n    }\n    .content {\n      padding: 20px;\n      color: #333;\n    }\n    .content p {\n      margin: 8px 0;\n      line-height: 1.5;\n    }\n    .label {\n      font-weight: 600;\n      color: #444;\n    }\n    .footer {\n      text-align: center;\n      padding: 12px;\n      background-color: #f3f3f3;\n      font-size: 0.9rem;\n      color: #777;\n    }\n    @media (max-width: 600px) {\n      .container { margin: 15px; }\n      .header { font-size: 1.1rem; }\n      .content { padding: 15px; }\n    }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">New Order Received</div>\n    <div class=\"content\">\n      <p>Hi <strong>{{ $('Webhook').item.json.body.message.toolCalls[0].function.arguments['Customer name'] }}</strong>,</p>\n      <p>has placed an order at your restaurant. Here’s the customer summary:</p>\n\n      <p><span class=\"label\">Customer Name:</span> {{ $('Webhook').item.json.body.message.toolCalls[0].function.arguments['Customer name'] }}</p>\n      <p><span class=\"label\">Contact Number:</span> {{ $('Webhook').item.json.body.message.toolCalls[0].function.arguments['Contact Number'] }}</p>\n      <p><span class=\"label\">Item(s) Placed:</span> {{ $('Webhook').item.json.body.message.toolCalls[0].function.arguments['What to order'] }}\n    </div>\n    <div class=\"footer\">\n      Thank you for choosing our restaurant 🍽️\n    </div>\n  </div>\n</body>\n</html>\n",
+        "options": {
+          "appendAttribution": true
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2288,
+        608
+      ],
+      "id": "cdd672c7-07c2-49f7-9f87-d8ecf8b093ec",
+      "name": "Send a message",
+      "webhookId": "[WEBHOOK_ID_REDACTED]",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[CREDENTIAL_ID_REDACTED]",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the following user message:\n\"{{ $json.output }}\"\nDoes this message look like a confirmed order or a request to notify the restaurant owner?\nAnswer strictly with \"YES\" if it is an order/notification.\nAnswer strictly with \"NO\" if it is just a question or unrelated.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1712,
+        608
+      ],
+      "id": "35a8cf78-9972-4e63-bcbb-7281c1ee3d9a",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1792,
+        832
+      ],
+      "id": "d85ef6c7-12aa-42a3-adec-611791935ec3",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "[CREDENTIAL_ID_REDACTED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f89d4560-ee5a-4a0c-a51f-9ef7b2cc9d7d",
+              "leftValue": "={{ $json.text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2064,
+        608
+      ],
+      "id": "1cf480cd-9a69-432d-8f1a-3f6d54fe1c34",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.wassenger.com/v1/messages?token=[TOKEN_REDACTED]",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"phone\": \"[PHONE_REDACTED]\",\n  \"message\": \"test\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2288,
+        208
+      ],
+      "id": "f4bf912e-72c4-40b3-8907-903d23848e8d",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the following user message:\n\"{{ $json.output }}\"\nDoes this message look like a confirmed order or a request to notify the restaurant owner?\nAnswer strictly with \"YES\" if it is an order/notification.\nAnswer strictly with \"NO\" if it is just a question or unrelated.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1712,
+        96
+      ],
+      "id": "dacd33d9-69a9-48ce-b507-897261560d92",
+      "name": "Basic LLM Chain1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1792,
+        320
+      ],
+      "id": "cd382444-2433-428e-bc5f-331601b6f75a",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "[CREDENTIAL_ID_REDACTED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f89d4560-ee5a-4a0c-a51f-9ef7b2cc9d7d",
+              "leftValue": "={{ $json.text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2064,
+        208
+      ],
+      "id": "77d78fe7-d831-48ed-9a92-028186f7afcb",
+      "name": "If1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Basic LLM Chain1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain1": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "9c098e9c-b1a3-4330-8ec5-66d839ecb6ac",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "[INSTANCE_ID_REDACTED]"
+  },
+  "id": "GUkRJf4S88pUYQTWCah9d",
+  "tags": []
+}
